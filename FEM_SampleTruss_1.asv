@@ -21,9 +21,8 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     for x = 1:mainLoopCount
         K = generateBeamStiffnessMatrix(nodes(x, 0), nodes(x,1), angles(x), numDofs, K, k(x))
     end
-    for x = 1:mainLoopCount
-        
-    end 
+    for x = 1:mainLoop
+    for 
 end
 
 function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numDofs, globalK, stiffnessCoefficient)
@@ -63,9 +62,32 @@ function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numD
     stiffnessMatrix = globalK + stiffnessCoefficient*specificK
 end
 
-function force = determineForces(node1, node2, angle, stiffnessCoefficient, 
+L = [12; 6*sqrt(3); 6]; %L array is hand calculated befrore simulation.
+theata = [0; 150; 60]; %theata array is hand calculated befrore simulation.
 
+% K coeffients
+k = E.*A./L;
 
+% Generate K Matricies
+C = cosd(theata);
+S = sind(theata);
+CS = C.*S; %".*" is a known function in matlab which multiplies matrix C and S element by element and returns the result in CS
+
+% Calculating the stiffness matrix for member 1
+k1 = k(1) * [C(1)^2, CS(1), -C(1)^2, -CS(1), 0, 0;
+             CS(1), S(1)^2, -CS(1), -S(1)^2, 0, 0;
+             -C(1)^2, -CS(1), C(1)^2, CS(1), 0, 0;
+             -CS(1), -S(1)^2, CS(1), S(1)^2, 0, 0;
+             0, 0, 0, 0, 0, 0;
+             0, 0, 0, 0, 0, 0];
+
+% Calculating the stiffness matrix for member 2
+k2 = k(2) * [0, 0, 0, 0, 0, 0;
+             0, 0, 0, 0, 0, 0;
+             0, 0, C(2)^2, CS(2), -C(2)^2, -CS(2);
+             0, 0, CS(2), S(2)^2, -CS(2), -S(2)^2;
+             0, 0, -C(2)^2, -CS(2), C(2)^2, CS(2);
+             0, 0, -CS(2), -S(2)^2, CS(2), S(2)^2];
              
 % Calculating the stiffness matrix for member 3
 k3 = k(3) * [C(3)^2, CS(3), 0, 0, -C(3)^2, -CS(3);
