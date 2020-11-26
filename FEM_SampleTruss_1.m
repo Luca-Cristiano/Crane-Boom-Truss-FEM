@@ -9,7 +9,13 @@ A = 1;
 E = 1;
 P = 1;
 
-function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes) 
+L = [12; 6*sqrt(3); 6]; %L array is hand calculated befrore simulation.
+theata = [0; 150; 60]; 
+nodes = [1 2; 2 3; 1 3]
+numNodes = 3
+calculateBridgeValues(numNodes, P, E, A, L, theata, nodes, 3, [1 2 3])
+
+function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes, pIndex, ignoredIndices) 
     numDofs = numNodes*2
     % allAngles = [90, 0, atand(5/3), 180 - atand(5/3)]
     % allLengths = 
@@ -19,10 +25,30 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     k = eMod.*area./lengths;
     mainLoopCount = length(lengths)
     for x = 1:mainLoopCount
-        K = generateBeamStiffnessMatrix(nodes(x, 0), nodes(x,1), angles(x), numDofs, K, k(x))
+        K = generateBeamStiffnessMatrix(nodes(x, 1), nodes(x,2), angles(x), numDofs, K, k(x))
     end
+    
+    externalForces = zeros(length(numDofs)-3,1)
+    externalForces(pIndex, 1) = load
+    
+    % Solve for unknown displacements (u2x, u3x, u3y)
+    x = numDofs - length(ignoredIndices)
+    kArrayPreSolve = zeros(x)
+    for x = 1:numDofs - length(ignoredIndices)
+        kArrayPreSolve(x)= K(ignoredIndices(end)+x,ignoredIndices(end)+1:end)
+    end
+    u = kArrayPreSolve \  externalForces
+    
+    U = zeros(numDofs)
+    for x = 1:numDofs-3
+        U(x) = u(3+x)
+    end
+
+    reactionForces = K * U;
+    memberForces = []  
     for x = 1:mainLoopCount
-        
+        f = determineForce(nodes(x, 0), nodes(x,1), angles(x), k(x), U)
+        memberForces = [memberForces; f]
     end 
 end
 
@@ -63,55 +89,12 @@ function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numD
     stiffnessMatrix = globalK + stiffnessCoefficient*specificK
 end
 
-function force = determineForces(node1, node2, angle, stiffnessCoefficient, 
-
-
-             
-% Calculating the stiffness matrix for member 3
-k3 = k(3) * [C(3)^2, CS(3), 0, 0, -C(3)^2, -CS(3);
-             CS(3), S(3)^2, 0, 0, -CS(3), -S(3)^2;
-             0, 0, 0, 0, 0, 0;
-             0, 0, 0, 0, 0, 0;
-             -C(3)^2, -CS(3), 0, 0, C(3)^2, CS(3);
-             -CS(3), -S(3)^2, 0, 0, CS(3), S(3)^2];
-
-%assembling the global stiffness matrix 
-K = k1 + k2 + k3;
-
-% Solve for unknown displacements (u2x, u3x, u3y)
-u = [K(3,3), K(3,5:6); K(5,3), K(5,5:6); K(6,3), K(6,5:6)] \  [0; P; 0];
-
-% Create entire displacemnet matrix U (u1x = u1y = u2y = 0)
-U = [0; 0; u(1); 0; u(2); u(3)];
-
-% Solve reation forces
-F = K * U;
-
-% Solve member forces
-fe1 = k(1) * ((U(3)-U(1))*C(1) + (U(4)-U(2))*S(1));
-fe2 = k(2) * ((U(5)-U(3))*C(2) + (U(6)-U(4))*S(2));
-fe3 = k(3) * ((U(5)-U(2))*C(3) + (U(6)-U(1))*S(3));
-
-Fe = [fe1;fe2;fe3];
-
-% Format and print results
-fprintf('Nodal Displacements:\n');
-j = 1;
-for i = 1:2:length(U)
-    fprintf('u%ix = %.3f P/EA\n', j, U(i));
-    fprintf('u%iy = %.3f P/EA\n', j, U(i+1));
-    j = j+1;
+function force = determineForce(node1, node2, angle, stiffnessCoefficient, globalDisplacementMatrix) 
+    x1 = node1*2 - 1
+    y1 = node1*2
+    x2 = node2*2 - 1
+    y2 = node2*2
+    force = stiffnessCoefficient*((globalDisplacementMatrix(x2)-globalDisplacementMatrix(x1))*cosd(angle) + (globalDisplacementMatrix(y2)-globalDisplacementMatrix(y1))*sind(angle))
 end
 
-fprintf('\nNodal Forces:\n');
-j = 1;
-for i = 1:2:length(F)
-    fprintf('f%ix = %.3f P\n', j, F(i));
-    fprintf('f%iy = %.3f P\n', j, F(i+1));
-    j = j+1;
-end
 
-fprintf('\nMember Forces:\n');
-for i = 1:length(Fe)
-    fprintf('f(%i) = %.3f P\n', i, Fe(i));
-end
