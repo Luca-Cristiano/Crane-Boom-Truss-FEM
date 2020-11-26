@@ -9,12 +9,28 @@ A = 1;
 E = 1;
 P = 1;
 
-L = [6; 6*sqrt(3); 12]; %L array is hand calculated befrore simulation.
-theata = [60; 150; 0]; 
+%CHANGE THESE VALUES
+%length array for every member beam
+%L = [6; 6*sqrt(3); 12];
+L = [5;3;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34)] ]
+%theta array corresponds to lengths, note it is from node 1 to node 2
+%theta = [60; 150; 0]; 
+theta = [90;0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3);0;atan(5/3);atan(-5/3)]
+%node array corresponds to beam, angles are from node #1 to node #2
 nodes = [1 3; 2 3; 1 2]
+nodes = [1 2;1 3;2 3;2 4;3 4;3 5;4 5;4 6;5 6;5 7;6 7;6 8;7 8;7 9;8 9;8 10; 9 10;
+%number of total nodes in the system
 numNodes = 3
+%index where external load P is exerted, note note this index is determined
+%by using node*2-1 if the force is in the x direction or by using node*2
+%if the force is in the direction
 forceIndex = 5
+%these indexes are using the nodal indexes in terms of directions, for the
+%x direction index is equal to node*2 - 1, for y direction index is equal
+%to node*2
 zeroDisplacementIndices = [1 2 4]
+%CHANGE THESE VALUES
+
 calculateBridgeValues(numNodes, P, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
 
 function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes, pIndex, ignoredIndices) 
@@ -25,6 +41,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     for x = 1:mainLoopCount
         K = generateBeamStiffnessMatrix(nodes(x, 1), nodes(x,2), angles(x), numDofs, K, k(x))
     end
+    
     %TESTED UP TO THIS POINT
     externalForces = []
     indexCounter = 0
@@ -38,53 +55,36 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     end
     externalForces = externalForces'
     
-    kArrayPreSolveSize = K
-    indicesOffset = 0
+    kArrayPreSolve = K
+    for x = numDofs:-1:1
+        if ismember(x, ignoredIndices)
+            kArrayPreSolve(x, :) = []
+        end
+    end
+    
+    for x = numDofs:-1:1
+        if ismember(x, ignoredIndices)
+            kArrayPreSolve(:, x) = []
+        end
+    end
+    
+    u = kArrayPreSolve \ externalForces
+    U = []
+    uIndex = 1
     for x = 1:numDofs
         if ismember(x, ignoredIndices)
-            K(
-        end
-        for y = 1:numDofs
-    kArrayPreSolve = zeros(kArrayPreSolveSize)
-    
-    for x:kArrayPreSolveSize
-        for y:kArrayPreSolveSize
-        end
+            U(end+1)= 0
+        else
+            U(end+1)= u(uIndex)
+            uIndex = uIndex + 1
+        end   
     end
     
-    
-    %{
-   
-    
-    % Solve for unknown displacements (u2x, u3x, u3y)
-    x = numDofs - length(ignoredIndices)
-    kArrayPreSolve = zeros(x)
-    for x = 1:numDofs - length(ignoredIndices)
-        kArrayPreSolve(x)= K(ignoredIndices(end)+x,ignoredIndices(end)+1:end)
-    end
-    u = kArrayPreSolve \  externalForces
-    
-    U = zeros(numDofs)
-    for x = 1:numDofs-3
-        U(x) = u(3+x)
-    end
-
-    reactionForces = K * U;
-    %}
-    
-    %TESTED UP TO THIS POINT
-    memberForces = []
-    
-    u = [K(3,3), K(3,5:6); K(5,3), K(5,5:6); K(6,3), K(6,5:6)] \  [0; load; 0];
-
-    % Create entire displacemnet matrix U (u1x = u1y = u2y = 0)
-    U = [0; 0; u(1); 0; u(2); u(3)];
-    
+    memberForces = []    
     for x = 1:mainLoopCount
         f = determineForce(nodes(x, 1), nodes(x,2), angles(x), k(x), U)
         memberForces = [memberForces; f]
     end 
-    
 end
 
 function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numDofs, globalK, stiffnessCoefficient)
