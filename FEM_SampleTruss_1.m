@@ -42,7 +42,6 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     k = eMod.*area./lengths;
     mainLoopCount = length(lengths)
     for x = 1:mainLoopCount
-        x
         K = generateBeamStiffnessMatrix(nodes(x, 1), nodes(x,2), angles(x), numDofs, K, k(x))
     end
     
@@ -89,6 +88,10 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         f = determineForce(nodes(x, 1), nodes(x,2), angles(x), k(x), U)
         memberForces = [memberForces; f]
     end 
+    
+    %{
+        CODE FOR STRESSES HERE
+    %}
 end
 
 function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numDofs, globalK, stiffnessCoefficient)
