@@ -5,8 +5,8 @@ clear all, clc;
 
 
 % Constants for the beam (A is area, E is elastic modulus, L is beam lengths, theta)
-A = 1; 
-E = 1;
+A = 0.0015875*0.017; 
+E = 103916700000;
 P = 1;
 
 %CHANGE THESE VALUES
@@ -37,6 +37,23 @@ zeroDisplacementIndices = [1 2 3]
 calculateBridgeValues(numNodes, P, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
 
 function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes, pIndex, ignoredIndices) 
+    %Varibles for the stress
+     t = 0.0015875
+     d = 0.0047625
+     b = 0.0085
+     w = 0.017
+     tHigh = 0
+     cHigh = 0
+     tRupture = 0
+     cRupture = 0
+     yeild = 65141501.9
+     fHgih = 0
+     bearing = 0
+     tearout = 0
+     buckling = 0
+     l = 0.03 %Lowest length of the link under compression
+     r = 0
+    
     numDofs = numNodes*2
     K = zeros(numDofs)
     k = eMod.*area./lengths;
@@ -89,9 +106,60 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         memberForces = [memberForces; f]
     end 
     
-    %{
-        CODE FOR STRESSES HERE
-    %}
+    tHigh = max(memberForces)
+    cHigh = min(memberForces)
+    
+    if tHigh < 0
+        tHigh = 0
+        error('No members in tension')
+    end
+    
+    if cHigh > 0
+        cHigh = 0
+        error('No members in compression')
+    end
+    
+    cHigh = abs(cHigh)
+    
+    %Calculating the max Rupture in the Link
+    tRupture = tHigh/(t*(w-d))
+    cRupture = cHigh/(t*w)
+    
+    if cRupture > yeild || tRupture > yeild
+        error ('Link was ruptured')
+    end
+    
+    if cHigh >= tHigh
+        fHigh = cHigh
+    else
+        fHigh = tHigh
+    end
+    
+    %Bearing Failiure
+    bearing = fHigh / (t*d)
+    
+    if bearing > yeild
+        %error ('Bearing stress ruined the bridge')
+    end
+    
+    tearout = tHigh/(2*b*t)
+    
+    if tearout > yeild
+        error ('Tearout ruined the bridge')
+    end
+    
+    %r = ((1/12)*t*w^2)/(t*w)
+    
+    %buckling = (pi^2 * eMod)/((l/r)^2)
+    I = (t*w^3)/12
+    
+    buckling = (pi^2 * eMod * I)/(l^2)
+    
+    buckling = buckling/(w*t)
+    
+    if buckling > yeild
+        %error ('Buckling ruined the bridge')
+    end
 end
 
 function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numDofs, globalK, stiffnessCoefficient)
