@@ -6,7 +6,7 @@ clear all, clc;
 
 % Constants for the beam (A is area, E is elastic modulus, L is beam lengths, theta)
 A = 0.0015875*0.017; 
-E = 103916700000;
+E = 10391670000;
 P = 1;
 
 %CHANGE THESE VALUES
@@ -15,7 +15,7 @@ P = 1;
 L = [5;3;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34)]
 %theta array corresponds to lengths, note it is from node 1 to node 2
 %theta = [60; 150; 0]; 
-theata = [90;0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3);0;atan(5/3);0;atan(-5/3)]
+theata = [90;0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3)]
 %node array corresponds to beam, angles are from node #1 to node #2
 %nodes = [1 3; 2 3; 1 2]
 nodes = [1 2; 1 3; 2 3; 2 4; 3 4; 3 5; 4 5; 4 6;5 6; 5 7; 6 7; 6 8; 7 8; 7 9; 8 9; 8 10; 9 10; 9 11; 10 11; 10 12; 11 12]
@@ -139,7 +139,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     bearing = fHigh / (t*d)
     
     if bearing > yeild
-        %error ('Bearing stress ruined the bridge')
+        error ('Bearing stress ruined the bridge')
     end
     
     tearout = tHigh/(2*b*t)
