@@ -120,6 +120,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         nodeResultantY(node2, 1) = nodeResultantY(node2, 1) + yComponent
     end
     nodeResultant = sqrt(nodeResultantX.^2 + nodeResultantY.^2)./2
+    maxShearForce = max(nodeResultant)
     
     tHigh = max(memberForces)
     cHigh = min(memberForces)
