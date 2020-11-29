@@ -106,6 +106,21 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         memberForces = [memberForces; f]
     end 
     
+    %calculate resultant forces at each node
+    nodeResultantX  = zeros(numNodes, 1)
+    nodeResultantY = zeros(numNodes, 1)
+    for x = 1:length(nodes)
+        node1 = nodes(x, 1)
+        node2 = nodes(x, 2)
+        xComponent = abs(memberForces(x)*cosd(angles(x)))
+        yComponent = abs(memberForces(x)*sind(angles(x)))
+        nodeResultantX(node1, 1) = nodeResultantX(node1, 1) + xComponent
+        nodeResultantX(node2, 1) = nodeResultantX(node2, 1) + xComponent
+        nodeResultantY(node1, 1) = nodeResultantY(node1, 1) + yComponent
+        nodeResultantY(node2, 1) = nodeResultantY(node2, 1) + yComponent
+    end
+    nodeResultant = sqrt(nodeResultantX.^2 + nodeResultantY.^2)./2
+    
     tHigh = max(memberForces)
     cHigh = min(memberForces)
     
