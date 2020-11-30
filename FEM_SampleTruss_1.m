@@ -34,25 +34,34 @@ forceIndex = 24
 zeroDisplacementIndices = [1 2 3]
 %CHANGE THESE VALUES
 
-calculateBridgeValues(numNodes, P, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
-
+%While true loop tests all the values
+while 2>1
+    P = P + 0.1
+    calculateBridgeValues(numNodes, P, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
+end
+    
 function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes, pIndex, ignoredIndices) 
-    %Varibles for the stress
+    %Geometry values for failiure calculations
      t = 0.0015875
      d = 0.0047625
      b = 0.0085
      w = 0.017
+     l = 0
+     %Normal and Shear Strength (Material Properties)
+     bassNormalSTR = 65141501.9
+     bassShearSTR = 4200000
+     hardNormalSTR = 1139000000
+     hardShearSTR = 54000000
+     %Initialization of highest forces and stress variables
      tHigh = 0
      cHigh = 0
+     fHgih = 0
      tRupture = 0
      cRupture = 0
-     yeild = 65141501.9
-     fHgih = 0
      bearing = 0
      tearout = 0
      buckling = 0
-     l = 0.03 %Lowest length of the link under compression
-     r = 0
+     shear = 0
     
     numDofs = numNodes*2
     K = zeros(numDofs)
@@ -62,7 +71,6 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         K = generateBeamStiffnessMatrix(nodes(x, 1), nodes(x,2), angles(x), numDofs, K, k(x))
     end
     
-    %TESTED UP TO THIS POINT
     externalForces = []
     indexCounter = 0
     for x = 1:numDofs
@@ -122,9 +130,22 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     nodeResultant = sqrt(nodeResultantX.^2 + nodeResultantY.^2)./2
     maxShearForce = max(nodeResultant)
     
+    %Calculating shear stress, maximum force of the pins over cross
+    %sectional area
+    shear = maxShearForce/(w*t)
+    
+    %Error messgae displayed when shear force surpasses the shear strength
+    %of the hardwood
+    if shear > hardShearSTR
+        error('Shear failiure')
+    end
+    
+    %Setting up the highest tension and compression forces for future
+    %calculations
     tHigh = max(memberForces)
     cHigh = min(memberForces)
     
+    %Checkin to make sure there are memebers in compression and tension
     if tHigh < 0
         tHigh = 0
         error('No members in tension')
@@ -135,46 +156,93 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         error('No members in compression')
     end
     
+    %Obtaining the magnitude of the compression force
     cHigh = abs(cHigh)
     
-    %Calculating the max Rupture in the Link
+    %Calculating the max rupture stress from compression and tension
     tRupture = tHigh/(t*(w-d))
     cRupture = cHigh/(t*w)
     
-    if cRupture > yeild || tRupture > yeild
-        error ('Link was ruptured')
+    %Error message appears if the rupture stress is larger than the normal
+    %stress of the basswood
+    if cRupture > bassNormalSTR || tRupture > bassNormalSTR
+        error ('Rupture Failiure')
     end
     
+    %Creating a variable for the highest force
     if cHigh >= tHigh
         fHigh = cHigh
     else
         fHigh = tHigh
     end
     
-    %Bearing Failiure
+    %Bearing Failiure highest magnitude of the force over thickness *
+    %diameter for the link and the pin
     bearing = fHigh / (t*d)
     
-    if bearing > yeild
-        error ('Bearing stress ruined the bridge')
+    %Checking the calculated bearing stress with the basswood normal
+    %strength
+    if bearing > bassNormalSTR
+        error ('Bearing Failiure (Link)')
     end
     
+    %Because the holes in the links are the same size as the pins and the
+    %same thickness is in contact with the pin and link the pervious
+    %bearing stress is compared to the normal strength of the hardwood
+    if bearing > hardNormalSTR
+        error ('Bearing Failiure (Pin)')
+    end
+    
+    %Finding the tearout for the basswood link which is the highest tension
+    %in the system over 2*thickness*the center of the hole to the edge of
+    %the link
     tearout = tHigh/(2*b*t)
     
-    if tearout > yeild
+    %Compares the calculated tearout stress and compares it to the shear
+    %strength of the Basswood
+    if tearout > bassShearSTR
         error ('Tearout ruined the bridge')
     end
     
-    %r = ((1/12)*t*w^2)/(t*w)
+    %Initializes a variable for the amount of compression forces in the
+    %system
+    compNum = 0
     
-    %buckling = (pi^2 * eMod)/((l/r)^2)
-    I = (t*w^3)/12
+    %Calculates the amount of members in compression
+    for x = 1: length(memberForces)
+        if memberForces(x) < 0
+            compNum = compNum + 1  
+        end
+    end
     
-    buckling = (pi^2 * eMod * I)/(l^2)
+    %Creates a 2 row matrix where the first row will contain the lengths
+    %of the members while the second row contains the compression forces
+    compLAndF = zeros(2,compNum)
+    compCount = 1
     
-    buckling = buckling/(w*t)
+    %Populates the matrix
+    for x = 1: length(memberForces)
+        if memberForces(x) < 0
+            compLAndF(1, compCount) = lengths (x)
+            compLAndF(2, compCount) = abs(memberForces(x))
+            compCount = compCount + 1;
+        end
+    end
     
-    if buckling > yeild
-        %error ('Buckling ruined the bridge')
+    %Calculates the second moment of interia
+    I = (t^3*w)/12
+    
+    %Calculates the buckling force for each compression member, pi^2*E*I/l^2. If the
+    %buckling force is smaller than the compression force on a member the
+    %beam buckles.
+    for x = 1: compNum
+        l = compLAndF(1, x)/100
+        
+        buckling = (pi^2 * eMod * I)/(l^2)
+        
+        if compLAndF(2, x) > buckling
+            error ('Buckling ruined the bridge')
+        end
     end
 end
 
