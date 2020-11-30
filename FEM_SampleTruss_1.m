@@ -8,6 +8,8 @@ clear all, clc;
 A = 0.0015875*0.017; 
 E = 10391670000;
 P = 1;
+g = 9.8
+W = 0
 
 %CHANGE THESE VALUES
 %length array for every member beam
@@ -34,10 +36,13 @@ forceIndex = 24
 zeroDisplacementIndices = [1 2 3]
 %CHANGE THESE VALUES
 
+W = g*P
+
 %While true loop tests all the values
 while 2>1
+    calculateBridgeValues(numNodes, W, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
     P = P + 0.1
-    calculateBridgeValues(numNodes, P, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
+    W = g*P
 end
     
 function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes, pIndex, ignoredIndices) 
