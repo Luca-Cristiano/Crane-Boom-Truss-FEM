@@ -5,9 +5,9 @@ clear all, clc;
 
 
 % Constants for the beam (A is area, E is elastic modulus, L is beam lengths, theta)
-A = 0.0015875*0.017; 
-E = 10391670000;
-P = 1;
+A = 0.0015875*0.017
+E = 10391670000
+P = 1
 g = 9.8
 W = 0
 
@@ -50,8 +50,11 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
      t = 0.0015875
      d = 0.0047625
      b = 0.0085
+     %b = 0.0085 + 0.0035
      w = 0.017
+     %w = 0.0149
      l = 0
+     area = t * w
      %Normal and Shear Strength (Material Properties)
      bassNormalSTR = 65141501.9
      bassShearSTR = 4200000
