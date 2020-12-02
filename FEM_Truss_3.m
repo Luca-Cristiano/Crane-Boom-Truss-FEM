@@ -14,21 +14,21 @@ W = 0
 %CHANGE THESE VALUES
 %length array for every member beam
 %L = [6; 6*sqrt(3); 12];
-L = [5;3;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34)]
+L = [5;3.75;6.25;7.5;6.25;7.5;6.25;7.5;6.25;7.5;6.25;7.5;6.25;7.5;6.25;7.5;6.25]
 %theta array corresponds to lengths, note it is from node 1 to node 2
 %theta = [60; 150; 0]; 
-theata = [90;0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3)]
+theata = [90;0;atand(5/3.75);0;atand(-5/3.75);0;atand(5/3.75);0;atand(-5/3.75);0;atand(5/3.75);0;atand(-5/3.75);0;atand(5/3.75);0;atand(-5/3)]
 %node array corresponds to beam, angles are from node #1 to node #2
 %nodes = [1 3; 2 3; 1 2]
-nodes = [1 2; 1 3; 2 3; 2 4; 3 4; 3 5; 4 5; 4 6;5 6; 5 7; 6 7; 6 8; 7 8; 7 9; 8 9; 8 10; 9 10; 9 11; 10 11; 10 12; 11 12]
+nodes = [1 2; 1 3; 2 3; 2 4; 3 4; 3 5; 4 5; 4 6;5 6; 5 7; 6 7; 6 8; 7 8; 7 9; 8 9; 8 10; 9 10]
 %number of total nodes in the system
 %numNodes = 3
-numNodes = 12
+numNodes = 10
 %index where external load P is exerted, note note this index is determined
 %by using node*2-1 if the force is in the x direction or by using node*2
 %if the force is in the direction
 %forceIndex = 5
-forceIndex = 24 
+forceIndex = 20
 %these indexes are using the nodal indexes in terms of directions, for the
 %x direction index is equal to node*2 - 1, for y direction index is equal
 %to node*2
