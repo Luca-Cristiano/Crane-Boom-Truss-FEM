@@ -140,7 +140,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     
     %Calculating shear stress, maximum force of the pins over cross
     %sectional area
-    shear = maxShearForce/(w*t)
+    shear = maxShearForce/(pi*(d/2)^2)
     
     %Error messgae displayed when shear force surpasses the shear strength
     %of the hardwood
