@@ -1,84 +1,75 @@
-% FEM Sample Truss
-
-% Clear Command Window and Workspace
+%Clear Command Window and Workspace
 clear all, clc;
 
-
-% Constants for the beam (A is area, E is elastic modulus, L is beam lengths, theta)
-A = 0.0015875*0.017
-E = 10391670000
-P = 1
-g = -9.8
-W = 0
-
-%CHANGE THESE VALUES
-%length array for every member beam
-%L = [6; 6*sqrt(3); 12];
+%lengths of every beam
 L = [5;3;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34);6;sqrt(34)]
-%theta array corresponds to lengths, note it is from node 1 to node 2
-%theta = [60; 150; 0]; 
+%angles for every corresponding beam, angles are from node i to node j
 theata = [90;0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3);0;atand(5/3);0;atand(-5/3)]
-%node array corresponds to beam, angles are from node #1 to node #2
-%nodes = [1 3; 2 3; 1 2]
+%nodes corresponding to every beam, angles are based on these nodes
 nodes = [1 2; 1 3; 2 3; 2 4; 3 4; 3 5; 4 5; 4 6;5 6; 5 7; 6 7; 6 8; 7 8; 7 9; 8 9; 8 10; 9 10; 9 11; 10 11; 10 12; 11 12]
 %number of total nodes in the system
-%numNodes = 3
 numNodes = 12
-%index where external load P is exerted, note note this index is determined
-%by using node*2-1 if the force is in the x direction or by using node*2
-%if the force is in the direction
-%forceIndex = 5
+%node index direction where cantilever load is exerted
 forceIndex = 24 
-%these indexes are using the nodal indexes in terms of directions, for the
-%x direction index is equal to node*2 - 1, for y direction index is equal
-%to node*2
-%zeroDisplacementIndices = [1 2 4]
+%indices of node directions where there is zero displacement
+%corresponds to fixed and roller supports
 zeroDisplacementIndices = [1 2 3]
-%CHANGE THESE VALUES
 
+%Constants related to cantilever loading
+%P is the current cantilever load (kg)
+%W is the force caused by the load
+P = 1
+g = -9.8
 W = g*P
-
-%While true loop tests all the values
-while 2>1
-    calculateBridgeValues(numNodes, W, E, A, L, theata, nodes, forceIndex, zeroDisplacementIndices)
+%loop to calculate bridge values and increment load until bridge fails
+while 1
+    calculateBridgeValues(numNodes, W, L, theata, nodes, forceIndex, zeroDisplacementIndices)
     P = P + 0.1
     W = g*P
 end
     
-function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles, nodes, pIndex, ignoredIndices) 
-    %Geometry values for failiure calculations
-     t = 0.0015875
-     d = 0.0047625
-     b = 0.012425
-     w = 0.0157
-     l = 0
-     area = t * w
-     %Normal and Shear Strength (Material Properties)
-     bassNormalSTR = 65141501.9
-     bassShearSTR = 4200000
-     hardNormalSTR = 1139000000
-     hardShearSTR = 54000000
-     %Initialization of highest forces and stress variables
-     tHigh = 0
-     cHigh = 0
-     fHgih = 0
-     tRupture = 0
-     cRupture = 0
-     bearing = 0
-     tearout = 0
-     buckling = 0
-     shear = 0
+function [] = calculateBridgeValues(numNodes, load, lengths, angles, nodes, pIndex, ignoredIndices) 
+    %Geometry values for failure calculations
+    t = 0.0015875
+    d = 0.0047625
+    b = 0.012425
+    w = 0.0157
+    l = 0
+    area = t * w
+     
+    %Normal and Shear Strength and Elastic Modulus (Material Properties)
+    bassNormalSTR = 65141501.9
+    bassShearSTR = 4200000
+    hardNormalSTR = 1139000000
+    hardShearSTR = 54000000
+    eMod = 10391670000
+     
+    %Initialization of highest forces and stress variables
+    tHigh = 0
+    cHigh = 0
+    fHgih = 0
+    tRupture = 0
+    cRupture = 0
+    bearing = 0
+    tearout = 0
+    buckling = 0
+    shear = 0
     
+    %initialize global K matrix
     numDofs = numNodes*2
     K = zeros(numDofs)
+  
+    %spring k values for every beam
     k = eMod.*area./lengths;
-    mainLoopCount = length(lengths)
-    for x = 1:mainLoopCount
+    
+    %loop to generate global K matrix for truss
+    for x = 1:length(lengths)
         K = generateBeamStiffnessMatrix(nodes(x, 1), nodes(x,2), angles(x), numDofs, K, k(x))
     end
     
+    %external forces vector generated to solve for node displacements later
+    %vector doesn't include rows where the displacement is 0
     externalForces = []
-    indexCounter = 0
     for x = 1:numDofs
         if ismember(x, ignoredIndices)
         elseif x == pIndex
@@ -89,6 +80,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     end
     externalForces = externalForces'
     
+    %removes columns that correspond to zero displacements from K matrix
     kArrayPreSolve = K
     for x = numDofs:-1:1
         if ismember(x, ignoredIndices)
@@ -96,12 +88,15 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         end
     end
     
+    %removes rows that correspond to zero displacements from K matrix
     for x = numDofs:-1:1
         if ismember(x, ignoredIndices)
             kArrayPreSolve(:, x) = []
         end
     end
     
+    %solves for displacements of each node and creates global displacement 
+    %matrix that includes zero displacements
     u = kArrayPreSolve \ externalForces
     U = []
     uIndex = 1
@@ -114,15 +109,16 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         end   
     end
     
+    %loop to determine the forces of each memeber using displacements,
+    %stiffness coefficients and node numbers
     memberForces = []    
-    for x = 1:mainLoopCount
+    for x = 1:length(lengths)
         f = determineForce(nodes(x, 1), nodes(x,2), angles(x), k(x), U)
         memberForces = [memberForces; f]
     end 
-    
     memberForces (1) = memberForces(1)*-1
     
-    %calculate resultant forces at each node
+    %determines resultant force at each node of truss
     nodeResultantX  = zeros(numNodes, 1)
     nodeResultantY = zeros(numNodes, 1)
     for x = 1:length(nodes)
@@ -138,14 +134,14 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     nodeResultant = sqrt(nodeResultantX.^2 + nodeResultantY.^2)./2
     maxShearForce = max(nodeResultant)
     
-    %Calculating shear stress, maximum force of the pins over cross
-    %sectional area
+    %Shear stress calculation - max force on pin over cross-sectional area
     shear = maxShearForce/(pi*(d/2)^2)
     
-    %Error messgae displayed when shear force surpasses the shear strength
+    %Error message displayed when shear force surpasses the shear strength
     %of the hardwood
     if shear > hardShearSTR
-        error('Shear failiure')
+        printFinalValues(memberForces, U, load)
+        error('Truss failed due to shear')
     end
     
     %Setting up the highest tension and compression forces for future
@@ -153,14 +149,16 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     tHigh = max(memberForces)
     cHigh = min(memberForces)
     
-    %Checkin to make sure there are memebers in compression and tension
+    %Checking to make sure there are memebers in compression and tension
     if tHigh < 0
         tHigh = 0
+        printFinalValues(memberForces, U, load)
         error('No members in tension')
     end
     
     if cHigh > 0
         cHigh = 0
+        printFinalValues(memberForces, U, load)
         error('No members in compression')
     end
     
@@ -174,7 +172,8 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     %Error message appears if the rupture stress is larger than the normal
     %stress of the basswood
     if cRupture > bassNormalSTR || tRupture > bassNormalSTR
-        error ('Rupture Failiure')
+        printFinalValues(memberForces, U, load)
+        error ('Truss failed due to rupture')
     end
     
     %Creating a variable for the highest force
@@ -184,21 +183,23 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         fHigh = tHigh
     end
     
-    %Bearing Failiure highest magnitude of the force over thickness *
+    %Bearing Failure highest magnitude of the force over thickness *
     %diameter for the link and the pin
     bearing = fHigh / (t*d)
     
     %Checking the calculated bearing stress with the basswood normal
     %strength
     if bearing > bassNormalSTR
-        error ('Bearing Failiure (Link)')
+        printFinalValues(memberForces, U, load)
+        error ('Truss failed due to Bearing Failure (Link)')
     end
     
     %Because the holes in the links are the same size as the pins and the
     %same thickness is in contact with the pin and link the pervious
     %bearing stress is compared to the normal strength of the hardwood
     if bearing > hardNormalSTR
-        error ('Bearing Failiure (Pin)')
+        printFinalValues(memberForces, U, load)
+        error ('Truss failed due to Bearing Failure (Pin)')
     end
     
     %Finding the tearout for the basswood link which is the highest tension
@@ -209,7 +210,8 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     %Compares the calculated tearout stress and compares it to the shear
     %strength of the Basswood
     if tearout > bassShearSTR
-        error ('Tearout ruined the bridge')
+        printFinalValues(memberForces, U, load)
+        error ('Truss failed due to tearout')
     end
     
     %Initializes a variable for the amount of compression forces in the
@@ -249,11 +251,14 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         buckling = (pi^2 * eMod * I)/(l^2)
         %compLAndF(2, x) = compLAndF(2, x)
         if compLAndF(2, x) > buckling
-            error ('Buckling ruined the bridge')
+            printFinalValues(memberForces, U, load)
+            error ('Truss failed due to buckling')
         end
     end
 end
 
+%function that generates individual stiffness matrix for a beam and adds it
+%to the current global stiffness matrix
 function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numDofs, globalK, stiffnessCoefficient)
     c = cosd(angle)
     s = sind(angle)
@@ -288,6 +293,7 @@ function stiffnessMatrix = generateBeamStiffnessMatrix(node1, node2, angle, numD
     stiffnessMatrix = globalK + stiffnessCoefficient*specificK
 end
 
+%function used to determine the force of each member
 function force = determineForce(node1, node2, angle, stiffnessCoefficient, globalDisplacementMatrix)
     if node1 < node2
         x1 = node1*2 - 1
@@ -298,6 +304,21 @@ function force = determineForce(node1, node2, angle, stiffnessCoefficient, globa
         error('Node indexing is incorrect')
     end
     force = stiffnessCoefficient*((globalDisplacementMatrix(x2)-globalDisplacementMatrix(x1))*cosd(angle) + (globalDisplacementMatrix(y2)-globalDisplacementMatrix(y1))*sind(angle))
+end
+
+%function that outputs final values when the bridge fails
+function values = printFinalValues(memberForces, U, load)
+    fprintf('Member Forces:\n');
+    for i = 1:length(memberForces)
+        fprintf('f(%i) = %.3f N\n', i, memberForces(i))
+    end
+    
+    fprintf('\nNode Displacements\n');
+    for i = 1:length(U)
+        fprintf('u(%i) = %.3f m\n', i, U(i))
+    end
+    
+    fprintf('\nFinal Cantilever Load Supported is %f kg\n', -load/9.8)    
 end
 
 
