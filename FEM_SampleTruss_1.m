@@ -318,7 +318,7 @@ function values = printFinalValues(memberForces, U, load)
         fprintf('u(%i) = %.3f m\n', i, U(i))
     end
     
-    fprintf('\nFinal Cantilever Load Supported is %f kg\n', -load/9.8)    
+    fprintf('\nFinal Cantilever Load Supported is %f kg\n\n', -load/9.8 - .1)    
 end
 
 
