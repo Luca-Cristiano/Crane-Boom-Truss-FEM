@@ -50,10 +50,8 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     %Geometry values for failiure calculations
      t = 0.0015875
      d = 0.0047625
-     %b = 0.0085
-     b = 0.0085 + 0.003625
-     %w = 0.017
-     w = 0.016
+     b = 0.011484
+     w = 0.01449
      l = 0
      area = t * w
      %Normal and Shear Strength (Material Properties)

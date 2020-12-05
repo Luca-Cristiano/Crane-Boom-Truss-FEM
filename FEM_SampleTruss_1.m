@@ -49,10 +49,8 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     %Geometry values for failiure calculations
      t = 0.0015875
      d = 0.0047625
-     %b = 0.0085
-     b = 0.0085 + 0.003625
-     %w = 0.017
-     w = 0.016
+     b = 0.012425
+     w = 0.0157
      l = 0
      area = t * w
      %Normal and Shear Strength (Material Properties)
@@ -207,7 +205,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     %in the system over 2*thickness*the center of the hole to the edge of
     %the link
     tearout = tHigh/(2*b*t)
-    
+   
     %Compares the calculated tearout stress and compares it to the shear
     %strength of the Basswood
     if tearout > bassShearSTR
