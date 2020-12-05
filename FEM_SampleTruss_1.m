@@ -8,7 +8,7 @@ clear all, clc;
 A = 0.0015875*0.017
 E = 10391670000
 P = 1
-g = 9.8
+g = -9.8
 W = 0
 
 %CHANGE THESE VALUES
@@ -49,10 +49,10 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
     %Geometry values for failiure calculations
      t = 0.0015875
      d = 0.0047625
-     b = 0.0085
-     %b = 0.0085 + 0.0035
-     w = 0.017
-     %w = 0.0149
+     %b = 0.0085
+     b = 0.0085 + 0.003625
+     %w = 0.017
+     w = 0.016
      l = 0
      area = t * w
      %Normal and Shear Strength (Material Properties)
@@ -121,6 +121,8 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         f = determineForce(nodes(x, 1), nodes(x,2), angles(x), k(x), U)
         memberForces = [memberForces; f]
     end 
+    
+    memberForces (1) = memberForces(1)*-1
     
     %calculate resultant forces at each node
     nodeResultantX  = zeros(numNodes, 1)
@@ -247,7 +249,7 @@ function [] = calculateBridgeValues(numNodes, load, eMod, area, lengths, angles,
         l = compLAndF(1, x)/100
         
         buckling = (pi^2 * eMod * I)/(l^2)
-        
+        %compLAndF(2, x) = compLAndF(2, x)
         if compLAndF(2, x) > buckling
             error ('Buckling ruined the bridge')
         end
